@@ -328,6 +328,82 @@ int main() {
 }
 
 
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    int n;
+    
+    // Read the number of elements
+    scanf("%d", &n);
+    
+    // Allocate memory for heights
+    int* height = (int*)malloc(n * sizeof(int));
+    if (height == NULL) {
+        return 1;
+    }
+    
+    // Read the heights
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &height[i]);
+    }
+    
+    // Two-pointer approach to trap rain water
+    if (n < 3) {
+        printf("0\n");
+        free(height);
+        return 0;
+    }
+    
+    int left = 0;
+    int right = n - 1;
+    int left_max = 0;
+    int right_max = 0;
+    int water = 0;
+    
+    while (left < right) {
+        if (height[left] < height[right]) {
+            if (height[left] >= left_max) {
+                left_max = height[left];
+            } else {
+                water += left_max - height[left];
+            }
+            left++;
+        } else {
+            if (height[right] >= right_max) {
+                right_max = height[right];
+            } else {
+                water += right_max - height[right];
+            }
+            right--;
+        }
+    }
+    
+    // Output the result
+    printf("%d\n", water);
+    
+    free(height);
+    return 0;
+}
+
+
+def longest_substring_length(s: str) -> int:
+    seen, left, max_len = {}, 0, 0
+    for right, c in enumerate(s):
+        left = max(left, seen.get(c, -1) + 1)
+        seen[c] = right
+        max_len = max(max_len, right - left + 1)
+    return max_len
+
+
+A fundamental data preprocessing step in machine learning. Scale a list of numbers to the range [0, 1]. Given a dataset of n numbers, normalize each value using min-max scaling: x' = (x - min) / (max - min) Where min is the smallest value and max is the largest value in the dataset. If all values are identical, output 0.00 for every element.
+Input Format
+
+First line: integer n . Second line: n space-separated integers.
+Output Format
+
+n space-separated numbers, each rounded to exactly 2 decimal places.
+
 
 
 */
