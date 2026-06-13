@@ -149,4 +149,185 @@ char* decodeMorse(const char* morseCode) {
     }
     
     return result;
-}*/
+}
+
+import re
+import sys
+
+def analyze_email(eml_file):
+    with open(eml_file, 'r') as f:
+        content = f.read()
+    
+    # Extract From header
+    from_match = re.search(r'^From:\s*(.*?)$', content, re.M)
+    sender = from_match.group(1) if from_match else "Unknown"
+    
+    # Extract all URLs
+    urls = re.findall(r'https?://[^\s"\'<>]+', content)
+    
+    # Suspicious patterns
+    suspicious = False
+    reasons = []
+    
+    # Check for domain mismatch
+    for url in urls:
+        if 'gitiab.com' in url.lower():
+            suspicious = True
+            reasons.append(f"Fake domain in URL: {url}")
+    
+    # Check urgency keywords
+    urgency_words = ['urgent', 'immediately', 'within 24 hours', 'verify now']
+    for word in urgency_words:
+        if word in content.lower():
+            reasons.append(f"Urgency keyword: {word}")
+    
+    # Output result (JSON format expected by platform)
+    result = {
+        "sender": sender,
+        "urls": urls,
+        "is_phishing": suspicious,
+        "reasons": reasons,
+        "action": "Report to security team" if suspicious else "Safe"
+    }
+    
+    print(json.dumps(result, indent=2))
+    return result
+
+if __name__ == "__main__":
+    analyze_email(sys.argv[1])
+
+
+import os
+import time
+import psutil
+import hashlib
+from collections import defaultdict
+
+class RansomwareDetector:
+    def __init__(self, watch_dir):
+        self.watch_dir = watch_dir
+        self.file_hashes = {}  # path -> hash
+        self.modification_counts = defaultdict(int)
+        
+    def get_file_hash(self, filepath):
+        """Compute SHA256 hash of file"""
+        try:
+            with open(filepath, 'rb') as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except:
+            return None
+    
+    def scan_directory(self):
+        """Scan all files in directory, detect encryption patterns"""
+        current_files = {}
+        suspicious_pids = set()
+        
+        for root, dirs, files in os.walk(self.watch_dir):
+            for file in files:
+                path = os.path.join(root, file)
+                
+                # Check file extension for encryption artifacts
+                if file.endswith(('.encrypted', '.locked', '.crypt')):
+                    suspicious_pids.add(self.find_process_accessing_file(path))
+                
+                # Check rapid modifications
+                try:
+                    mtime = os.path.getmtime(path)
+                    now = time.time()
+                    if now - mtime < 2:  # Modified in last 2 seconds
+                        self.modification_counts[path] += 1
+                        if self.modification_counts[path] > 50:
+                            suspicious_pids.add(self.find_process_accessing_file(path))
+                except:
+                    pass
+                
+        return list(suspicious_pids)
+    
+    def find_process_accessing_file(self, filepath):
+        """Find which process is accessing a suspicious file"""
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                for item in proc.open_files():
+                    if filepath in item.path:
+                        return proc.pid
+            except:
+                pass
+        return None
+    
+    def kill_process(self, pid):
+        """Terminate malicious process"""
+        try:
+            proc = psutil.Process(pid)
+            proc.terminate()
+            print(f"Killed malicious process PID {pid} ({proc.name()})")
+            return True
+        except:
+            return False
+    
+    def run(self):
+        print(f"Monitoring {self.watch_dir} for ransomware...")
+        while True:
+            suspicious = self.scan_directory()
+            for pid in suspicious:
+                if pid:
+                    self.kill_process(pid)
+            time.sleep(1)
+
+if __name__ == "__main__":
+    detector = RansomwareDetector("/var/www/intranet")
+    detector.run()
+
+
+    #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+typedef struct {
+    char ssid[64];
+    char bssid[18];
+} AccessPoint;
+
+int is_evil_twin(AccessPoint *observed, AccessPoint *known_aps, int known_count) {
+    for (int i = 0; i < known_count; i++) {
+        // Same SSID but different BSSID = evil twin
+        if (strcmp(observed->ssid, known_aps[i].ssid) == 0 &&
+            strcmp(observed->bssid, known_aps[i].bssid) != 0) {
+            return 1; // Evil twin detected
+        }
+    }
+    return 0;
+}
+
+int main() {
+    // Legitimate airport APs (SSID, BSSID)
+    AccessPoint legitimate[] = {
+        {"JFK-Free-WiFi", "00:14:22:33:44:55"},
+        {"JFK-Secure",     "00:14:22:33:44:56"},
+        {"SFO-Guest",      "AA:BB:CC:DD:EE:01"}
+    };
+    int legit_count = sizeof(legitimate) / sizeof(legitimate[0]);
+    
+    // Observed AP from scan
+    AccessPoint observed;
+    printf("Enter observed SSID: ");
+    fgets(observed.ssid, 64, stdin);
+    observed.ssid[strcspn(observed.ssid, "\n")] = 0;
+    
+    printf("Enter observed BSSID (MAC): ");
+    fgets(observed.bssid, 18, stdin);
+    observed.bssid[strcspn(observed.bssid, "\n")] = 0;
+    
+    if (is_evil_twin(&observed, legitimate, legit_count)) {
+        printf(" EVIL TWIN DETECTED! Do not connect.\n");
+        printf("Action: Block connection, notify user.\n");
+    } else {
+        printf("✓ AP appears legitimate.\n");
+    }
+    
+    return 0;
+}
+
+
+
+
+*/
